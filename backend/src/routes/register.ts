@@ -5,11 +5,15 @@ import { createCustomerService } from "../services/customerService.js";
 /**
  * Registration + informed consent gate (first use).
  * POST /assistant/register {name,email,phone,referrer_phone?,consent_version}
- * → 200 {customer_id}; 400 bad body / duplicate; 409 email|phone taken.
+ * → 200 {customer_id, consent_version, reconsented}; 400 bad body / stale version.
  *
  * Registration is data capture + consent, NOT login. The bridge passes the
  * returned customer_id server-to-server. The current consent text/version is
  * served by routes/assistant.ts (`GET /assistant/consent`).
+ *
+ * Registration is an UPSERT (design): an existing email/phone is re-consented
+ * in place (id + history + audit preserved) rather than rejected with 409, so
+ * returning customers stay usable when CURRENT_CONSENT_VERSION changes.
  */
 export function createRegisterRouter(db: Db): Hono {
   const app = new Hono();
@@ -36,10 +40,12 @@ export function createRegisterRouter(db: Db): Hono {
     switch (result.status) {
       case "invalid":
         return c.json({ error: result.reason }, 400);
-      case "conflict":
-        return c.json({ error: `${result.field} ya registrado`, field: result.field }, 409);
       case "ok":
-        return c.json({ customer_id: result.customer.id, consent_version: result.customer.consentVersion });
+        return c.json({
+          customer_id: result.customer.id,
+          consent_version: result.customer.consentVersion,
+          reconsented: result.reconsented,
+        });
     }
   });
 

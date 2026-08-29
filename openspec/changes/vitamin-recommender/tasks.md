@@ -52,8 +52,8 @@ Chain strategy: stacked-to-main
 
 ## Phase 4: Frontend Chat (end-to-end slice)
 
-- [ ] 4.1 Modify `frontend/src/app/components/ChatWidget.tsx` (registration+consent gate → real client + memory via `/assistant/history`; render consent text from `GET /assistant/consent`)
-- [ ] 4.2 Modify `frontend/vite.config.ts` (proxy `/api/*` → backend)
+- [x] 4.1 Modify `frontend/src/app/components/ChatWidget.tsx` (registration+consent gate → real client + memory via `/assistant/history`; render consent text from `GET /assistant/consent`)
+- [x] 4.2 Modify `frontend/vite.config.ts` (proxy `/api/*` → backend)
 
 ## Phase 5: CRM /admin Pages (dev-only)
 

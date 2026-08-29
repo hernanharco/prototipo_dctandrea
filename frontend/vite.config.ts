@@ -31,6 +31,20 @@ export default defineConfig({
     },
   },
 
+  // Dev proxy: the browser only talks to `/api/*`; Vite forwards to the Hono
+  // backend, stripping the `/api` prefix so it reaches `/assistant/*`.
+  // The backend defaults to PORT 3000 (see backend/src/index.ts). The Gemini
+  // key never lives in the browser bundle — it stays in the backend/proxy.
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
+
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
 })

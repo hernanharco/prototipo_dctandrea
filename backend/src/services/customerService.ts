@@ -5,12 +5,18 @@ import type { Customer } from "../db/schema.js";
 import { CURRENT_CONSENT_VERSION } from "../config/consent.js";
 
 /**
- * Customer service: registration + consent versioning.
+ * Customer service: registration (upsert) + consent versioning.
  *
  * Registration is data capture + consent, NOT login (no password/session).
  * Consent is VERSION-GATED, not presence-gated: a customer whose
  * `consent_version < CURRENT_CONSENT_VERSION` must re-consent before any new
  * recommendation, while prior records are preserved.
+ *
+ * Registration is an UPSERT (design: Registration + Consent Flow → upsert):
+ * when the email/phone already exists, the existing customer is RE-CONSENTED
+ * (consent_version + consent_timestamp refreshed, id + history + audit records
+ * preserved) instead of returning a conflict. This keeps the chat usable for
+ * the whole base when CURRENT_CONSENT_VERSION is bumped.
  */
 
 export interface RegisterInput {
@@ -22,9 +28,8 @@ export interface RegisterInput {
 }
 
 export type RegisterResult =
-  | { status: "ok"; customer: Customer }
-  | { status: "invalid"; reason: string }
-  | { status: "conflict"; field: "email" | "phone" };
+  | { status: "ok"; customer: Customer; reconsented: boolean }
+  | { status: "invalid"; reason: string };
 
 export interface CustomerService {
   register(input: RegisterInput): RegisterResult;
@@ -56,18 +61,17 @@ export function createCustomerService(db: Db): CustomerService {
         return { status: "invalid", reason: `consent_version debe ser ${CURRENT_CONSENT_VERSION}` };
       }
 
-      // Uniqueness on email/phone (case-insensitive for email).
-      const dupEmail = db.select().from(customers).where(eq(customers.email, email)).get();
-      if (dupEmail) {
-        return { status: "conflict", field: "email" };
-      }
-      const dupPhone = db
-        .select()
-        .from(customers)
-        .where(eq(customers.phone, input.phone.trim()))
-        .get();
-      if (dupPhone) {
-        return { status: "conflict", field: "phone" };
+      // Upsert: an existing email/phone re-consents instead of conflicting,
+      // preserving id, conversation history and audit records (version-gated).
+      const byEmail = db.select().from(customers).where(eq(customers.email, email)).get();
+      const byPhone = db.select().from(customers).where(eq(customers.phone, phone)).get();
+      const existing = byEmail ?? byPhone;
+      if (existing) {
+        const reconsented = this.reConsent(existing.id);
+        if (!reconsented) {
+          return { status: "invalid", reason: "no se pudo renovar el consentimiento" };
+        }
+        return { status: "ok", customer: reconsented, reconsented: true };
       }
 
       const now = new Date().toISOString();
@@ -76,7 +80,7 @@ export function createCustomerService(db: Db): CustomerService {
         .values({
           name,
           email,
-          phone: input.phone.trim(),
+          phone,
           referrerPhone: input.referrerPhone?.trim() || null,
           consentVersion: input.consentVersion,
           consentTimestamp: now,
@@ -84,7 +88,7 @@ export function createCustomerService(db: Db): CustomerService {
         })
         .returning()
         .get();
-      return { status: "ok", customer: inserted };
+      return { status: "ok", customer: inserted, reconsented: false };
     },
 
     getById(id: number): Customer | undefined {
