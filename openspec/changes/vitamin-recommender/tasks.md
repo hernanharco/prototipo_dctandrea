@@ -57,8 +57,8 @@ Chain strategy: stacked-to-main
 
 ## Phase 5: CRM /admin Pages (dev-only)
 
-- [ ] 5.1 Add `/admin` routes + pages via react-router (catalog, customers, purchases, conversations)
-- [ ] 5.2 Wire admin UI to `/admin/*` endpoints; recommendations read-only (no POST/PUT/DELETE)
+- [x] 5.1 Add `/admin` routes + pages via react-router (catalog, customers, purchases, conversations)
+- [x] 5.2 Wire admin UI to `/admin/*` endpoints; recommendations read-only (no POST/PUT/DELETE)
 
 ## Phase 6: Testing + Build
 
