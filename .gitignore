@@ -4,6 +4,10 @@ node_modules/
 # Build output
 dist/
 frontend/dist/
+backend/dist/
+
+# Local dev data (SQLite, curated intermediate)
+backend/data/
 
 # Env
 .env
