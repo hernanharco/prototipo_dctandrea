@@ -3,6 +3,7 @@ import { createDatabase } from "../src/db/client.js";
 import type { Db } from "../src/db/client.js";
 import { migrate } from "../src/db/migrate.js";
 import { seedProducts } from "../src/seed/seedProducts.js";
+import { seedGuidance } from "../src/seed/seedGuidance.js";
 import { buildApp } from "../src/index.js";
 import {
   purchases,
@@ -13,6 +14,7 @@ import {
 import { eq } from "drizzle-orm";
 import { createRecommendationService } from "../src/services/recommendationService.js";
 import { createConversationService } from "../src/services/conversationService.js";
+import { createGuidanceService } from "../src/services/guidanceService.js";
 import type { Hono } from "hono";
 
 /**
@@ -30,6 +32,10 @@ import type { Hono } from "hono";
  *     previous user/assistant turns, and GET /assistant/history returns them).
  *  3. APPEND-ONLY — DELETE over the recommendations log is rejected (no route,
  *   admin GET-only) and never removes rows; the service exposes no delete/update.
+ *
+ * Also covered: GUIDANCE INJECTION — the doctor-authored "Guías de la doctora"
+ * block is present in the system prompt when enabled guidance exists, and is
+ * omitted entirely when there is none.
  *
  * No real API key and no network: the Gemini client is stubbed at the fetch
  * boundary and returns a canned preventive reply.
@@ -83,6 +89,7 @@ describe("register + ask (integration: purchase injection, history, append-only)
     db = createDatabase(":memory:");
     await migrate(db);
     await seedProducts(db);
+    await seedGuidance(db);
     app = buildApp(db);
   });
 
@@ -124,6 +131,10 @@ describe("register + ask (integration: purchase injection, history, append-only)
     const sysPrompt = (sent.systemInstruction as { parts: { text: string }[] }).parts[0].text;
     expect(sysPrompt).toContain("HISTORIAL DE COMPRAS DEL USUARIO");
     expect(sysPrompt).toContain("100305");
+    // Doctor-authored guidance is injected too, with its title and product refs.
+    expect(sysPrompt).toContain("GUÍAS DE LA DOCTORA");
+    expect(sysPrompt).toContain("Paquete Vitalidad");
+    expect(sysPrompt).toContain("100930");
   });
 
   it("does not inject purchase context when the customer has no purchases", async () => {
@@ -140,8 +151,41 @@ describe("register + ask (integration: purchase injection, history, append-only)
 
     const sent = capturedBodies[capturedBodies.length - 1];
     const sysPrompt = (sent.systemInstruction as { parts: { text: string }[] }).parts[0].text;
-    expect(sysPrompt).toContain("(sin compras registradas)");
-    expect(sysPrompt).not.toMatch(/HISTORIAL DE COMPRAS[\s\S]*\d{4,6}/);
+    // No purchases → the purchase block says so explicitly (no refs leaked).
+    expect(sysPrompt).toContain("HISTORIAL DE COMPRAS DEL USUARIO: (sin compras registradas)");
+    // The FULL catalog is always injected (verify WARNING fix): new users with
+    // no purchases still get valid product recommendations, never an empty list.
+    expect(sysPrompt).toContain("CATÁLOGO DISPONIBLE");
+    expect(sysPrompt).toContain("100305");
+  });
+
+  it("omits the guidance block when no guidance is enabled", async () => {
+    // Temporarily remove all guidance rows so the DB state has none enabled.
+    const svc = createGuidanceService(db);
+    for (const g of svc.list()) svc.remove(g.id);
+    try {
+      const customerId = await register("singuia@x.com", "3006");
+      const conv = createConversationService(db);
+      const conversationId = conv.createConversation(customerId).id;
+
+      const res = await post("/assistant/ask", {
+        customer_id: customerId,
+        conversation_id: conversationId,
+        message: "hola",
+      });
+      expect(res.status).toBe(200);
+
+      const sent = capturedBodies[capturedBodies.length - 1];
+      const sysPrompt = (sent.systemInstruction as { parts: { text: string }[] }).parts[0].text;
+      // No guidance rows → the block must be absent (never an empty header).
+      expect(sysPrompt).not.toContain("GUÍAS DE LA DOCTORA");
+      // The rest of the context still arrives intact.
+      expect(sysPrompt).toContain("CATÁLOGO DISPONIBLE");
+      expect(sysPrompt).toContain("HISTORIAL DE COMPRAS DEL USUARIO");
+    } finally {
+      // Restore the seeded guidance for the tests that follow.
+      await seedGuidance(db);
+    }
   });
 
   it("loads prior messages so the conversation continues coherently across turns", async () => {

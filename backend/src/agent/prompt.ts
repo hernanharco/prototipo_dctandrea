@@ -19,6 +19,11 @@ export interface PurchaseContext {
   refs: string[];
 }
 
+export interface GuidanceContext {
+  /** Enabled, doctor-authored guidance entries (title + content + catalog refs). */
+  items: Array<{ title: string; content: string; productReferences: string[] }>;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -63,18 +68,40 @@ function purchasesBlock(purchases: PurchaseContext | null): string {
 }
 
 /**
- * Builds the full system prompt, injecting only valid catalog rows and the
- * user's purchase history (server-side injection — never tool-calling).
+ * Doctor-authored guidance block. Omitted entirely when no guidance is
+ * enabled — an empty knowledge base must never look like an empty context.
  */
-export function buildSystemPrompt(ctx: CatalogContext, purchases: PurchaseContext | null): string {
-  return [
+function guidanceBlock(ctx: GuidanceContext): string {
+  if (ctx.items.length === 0) {
+    return "";
+  }
+  const lines = ctx.items.map(
+    (g) => `- [${g.title}]: ${g.content} (productos: [${g.productReferences.join(", ")}])`,
+  );
+  return `GUÍAS DE LA DOCTORA (conocimiento clínico del profesional — úsalas para enriquecer las recomendaciones preventivas):\n${lines.join("\n")}`;
+}
+
+/**
+ * Builds the full system prompt, injecting only valid catalog rows, the
+ * user's purchase history and the doctor's guidance (server-side injection —
+ * never tool-calling). Empty blocks are filtered out so no stale headers leak
+ * into the prompt.
+ */
+export function buildSystemPrompt(
+  ctx: CatalogContext,
+  purchases: PurchaseContext | null,
+  guidance: GuidanceContext,
+): string {
+  const blocks = [
     HARD_LIMIT,
     "",
     "CONTEXTO DE ESTA CONVERSACIÓN:",
     purchasesBlock(purchases),
     "",
     catalogBlock(ctx),
-  ].join("\n");
+    guidanceBlock(guidance),
+  ].filter((block) => block.length > 0);
+  return blocks.join("\n");
 }
 
 /**

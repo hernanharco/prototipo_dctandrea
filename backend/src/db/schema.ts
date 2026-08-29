@@ -127,6 +127,30 @@ export const recommendations = sqliteTable(
   ],
 );
 
+/**
+ * Doctor-authored knowledge/guidance, injected server-side into the agent
+ * context (alongside catalog + purchase history) to enrich preventive
+ * recommendations. Editable knowledge — unlike `recommendations` (append-only
+ * audit log), UPDATE/DELETE are exposed by the service and admin routes.
+ */
+export const guidance = sqliteTable(
+  "guidance",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    title: text("title").notNull(),
+    content: text("content").notNull(),
+    productReferences: text("product_references").notNull(), // JSON array of catalog refs
+    enabled: integer("enabled").notNull().default(1), // 0 | 1
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => [index("guidance_enabled_idx").on(t.enabled)],
+);
+
 export type Customer = typeof customers.$inferSelect;
 export type NewCustomer = typeof customers.$inferInsert;
 export type Product = typeof products.$inferSelect;
@@ -137,3 +161,5 @@ export type Conversation = typeof conversations.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type Recommendation = typeof recommendations.$inferSelect;
 export type NewRecommendation = typeof recommendations.$inferInsert;
+export type Guidance = typeof guidance.$inferSelect;
+export type NewGuidance = typeof guidance.$inferInsert;

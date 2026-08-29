@@ -1,9 +1,11 @@
 import { Hono } from "hono";
 import type { Db } from "../db/client.js";
 import { createCatalogService } from "../services/catalogService.js";
+import { createGuidanceService } from "../services/guidanceService.js";
 import { createRecommendationService } from "../services/recommendationService.js";
 import { createConversationService } from "../services/conversationService.js";
 import { customers, conversations, purchases } from "../db/schema.js";
+import type { NewGuidance } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
 /**
@@ -31,6 +33,7 @@ export function createAdminRouter(db: Db): Hono {
   const catalog = createCatalogService(db);
   const recommendations = createRecommendationService(db);
   const conversationsService = createConversationService(db);
+  const guidanceService = createGuidanceService(db);
 
   // --- Catalog (products): list, create, edit. No destructive delete. ---
   app.get("/catalog", (c) => c.json({ products: catalog.listAll() }));
@@ -159,5 +162,98 @@ export function createAdminRouter(db: Db): Hono {
     c.json({ recommendations: recommendations.listAll() }),
   );
 
+  // --- Guidance: doctor-authored knowledge. Editable CRUD (unlike the audit
+  // log, guidance is meant to be curated over time). ---
+  app.get("/guidance", (c) => c.json({ guidance: guidanceService.list() }));
+
+  app.post("/guidance", async (c) => {
+    const body = await c.req.json().catch(() => null);
+    if (!body) return c.json({ error: "invalid body" }, 400);
+    const title = String(body.title ?? "").trim();
+    const content = String(body.content ?? "").trim();
+    if (!title) return c.json({ error: "missing field: title" }, 400);
+    if (!content) return c.json({ error: "missing field: content" }, 400);
+    const refs = parseProductRefs(body.product_references);
+    if (refs === null) {
+      return c.json(
+        { error: "product_references must be an array of catalog references" },
+        400,
+      );
+    }
+    const row = guidanceService.create({
+      title,
+      content,
+      productReferences: JSON.stringify(refs),
+    });
+    return c.json({ guidance: row }, 201);
+  });
+
+  app.put("/guidance/:id", async (c) => {
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.json({ error: "invalid id" }, 400);
+    const body = await c.req.json().catch(() => null);
+    if (!body) return c.json({ error: "invalid body" }, 400);
+
+    const patch: Partial<NewGuidance> = {};
+    if (body.title != null) {
+      const title = String(body.title).trim();
+      if (!title) return c.json({ error: "title cannot be empty" }, 400);
+      patch.title = title;
+    }
+    if (body.content != null) {
+      const content = String(body.content).trim();
+      if (!content) return c.json({ error: "content cannot be empty" }, 400);
+      patch.content = content;
+    }
+    if (body.product_references != null) {
+      const refs = parseProductRefs(body.product_references);
+      if (refs === null) {
+        return c.json(
+          { error: "product_references must be an array of catalog references" },
+          400,
+        );
+      }
+      patch.productReferences = JSON.stringify(refs);
+    }
+    if (body.enabled != null) {
+      const enabled = Number(body.enabled);
+      if (enabled !== 0 && enabled !== 1) {
+        return c.json({ error: "enabled must be 0 or 1" }, 400);
+      }
+      patch.enabled = enabled;
+    }
+    if (Object.keys(patch).length === 0) {
+      return c.json({ error: "nothing to update" }, 400);
+    }
+
+    const row = guidanceService.update(id, patch);
+    if (!row) return c.json({ error: "guidance not found" }, 404);
+    return c.json({ guidance: row });
+  });
+
+  app.delete("/guidance/:id", (c) => {
+    const id = Number(c.req.param("id"));
+    if (!Number.isInteger(id)) return c.json({ error: "invalid id" }, 400);
+    const removed = guidanceService.remove(id);
+    if (!removed) return c.json({ error: "guidance not found" }, 404);
+    return c.body(null, 204);
+  });
+
   return app;
+}
+
+/**
+ * Validates a `product_references` payload: must be an array of non-empty
+ * strings. Returns null when invalid (route replies 400). The array is the
+ * wire format; the service persists it as a JSON string.
+ */
+function parseProductRefs(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  const refs: string[] = [];
+  for (const item of value) {
+    const ref = String(item ?? "").trim();
+    if (!ref) return null;
+    refs.push(ref);
+  }
+  return refs;
 }

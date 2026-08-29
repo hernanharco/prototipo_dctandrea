@@ -14,6 +14,7 @@ import { CustomersPage } from "./admin/CustomersPage";
 import { PurchasesPage } from "./admin/PurchasesPage";
 import { ConversationsPage } from "./admin/ConversationsPage";
 import { ConversationDetailPage } from "./admin/ConversationDetailPage";
+import { GuidancePage } from "./admin/GuidancePage";
 import { RecommendationsPage } from "./admin/RecommendationsPage";
 
 function Landing() {
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="purchases" element={<PurchasesPage />} />
         <Route path="conversations" element={<ConversationsPage />} />
         <Route path="conversations/:id" element={<ConversationDetailPage />} />
+        <Route path="guidance" element={<GuidancePage />} />
         <Route path="recommendations" element={<RecommendationsPage />} />
       </Route>
     </Routes>

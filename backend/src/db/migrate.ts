@@ -67,6 +67,17 @@ CREATE TABLE IF NOT EXISTS recommendations (
 );
 CREATE INDEX IF NOT EXISTS recommendations_customer_id_idx ON recommendations (customer_id);
 CREATE INDEX IF NOT EXISTS recommendations_created_at_idx ON recommendations (created_at);
+
+CREATE TABLE IF NOT EXISTS guidance (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  product_references TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS guidance_enabled_idx ON guidance (enabled);
 `;
 
 /**

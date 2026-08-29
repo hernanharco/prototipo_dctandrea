@@ -4,6 +4,7 @@ import { createCustomerService } from "../services/customerService.js";
 import { createConversationService } from "../services/conversationService.js";
 import { createRecommendationService } from "../services/recommendationService.js";
 import { createCatalogService } from "../services/catalogService.js";
+import { createGuidanceService } from "../services/guidanceService.js";
 import { createGeminiClient } from "../agent/gemini.js";
 import { buildSystemPrompt, buildHistoryMessages, extractProductRefs } from "../agent/prompt.js";
 import { guardReply } from "../agent/guard.js";
@@ -27,6 +28,7 @@ export function createAssistantRouter(db: Db): Hono {
   const conversations = createConversationService(db);
   const recommendations = createRecommendationService(db);
   const catalog = createCatalogService(db);
+  const guidance = createGuidanceService(db);
   const gemini = createGeminiClient();
 
   app.get("/consent", (c) => {
@@ -89,17 +91,25 @@ export function createAssistantRouter(db: Db): Hono {
 
     // Server-side purchase-context injection (not tool-calling).
     const purchaseRefs = conversations.loadPurchases(customerId);
-    const validProducts = purchaseRefs
-      .map((ref) => catalog.lookup(ref))
-      .filter((r): r is { found: true; product: Product } => r.found)
-      .map((r) => r.product);
+    // Inject the FULL catalog so the agent can recommend to any user (fixes
+    // verify WARNING: new users with no purchases got an empty catalog and no
+    // suggestions). Purchases stay as personalization context. Only real refs.
+    const catalogProducts = catalog.listAll();
 
     // Persist user message, build history, run the agent.
     conversations.saveMessage(conversationId, "user", message);
     const history = conversations.loadHistory(conversationId);
+    const guidanceItems = guidance.listEnabled();
     const systemPrompt = buildSystemPrompt(
-      { products: validProducts },
+      { products: catalogProducts },
       { refs: purchaseRefs },
+      {
+        items: guidanceItems.map((g) => ({
+          title: g.title,
+          content: g.content,
+          productReferences: parseGuidanceRefs(g.productReferences),
+        })),
+      },
     );
 
     let rawReply: string;
@@ -138,4 +148,17 @@ export function createAssistantRouter(db: Db): Hono {
   });
 
   return app;
+}
+
+/**
+ * Parses the persisted JSON-array of product refs. Defensive: a corrupted row
+ * degrades to an empty list instead of crashing the chat.
+ */
+function parseGuidanceRefs(raw: string): string[] {
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
 }

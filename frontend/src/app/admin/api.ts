@@ -70,6 +70,24 @@ export interface Recommendation {
   createdAt: string;
 }
 
+export interface Guidance {
+  id: number;
+  title: string;
+  content: string;
+  productReferences: string; // JSON array of catalog refs
+  enabled: number; // 0 | 1
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GuidanceInput {
+  title: string;
+  content: string;
+  product_references: string[];
+}
+
+export type GuidancePatch = Partial<GuidanceInput> & { enabled?: number };
+
 export class AdminError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -116,4 +134,22 @@ export const api = {
     }),
   listRecommendations: () =>
     request<{ recommendations: Recommendation[] }>("/recommendations"),
+  listGuidance: () => request<{ guidance: Guidance[] }>("/guidance"),
+  createGuidance: (input: GuidanceInput) =>
+    request<{ guidance: Guidance }>("/guidance", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+  updateGuidance: (id: number, patch: GuidancePatch) =>
+    request<{ guidance: Guidance }>(`/guidance/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(patch),
+    }),
+  toggleGuidance: (id: number, enabled: number) =>
+    request<{ guidance: Guidance }>(`/guidance/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ enabled }),
+    }),
+  deleteGuidance: (id: number) =>
+    request<null>(`/guidance/${id}`, { method: "DELETE" }),
 };

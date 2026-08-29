@@ -1,13 +1,24 @@
 import { NavLink, Outlet, Link } from "react-router";
-import { Leaf, Home, LayoutDashboard } from "lucide-react";
+import {
+  Leaf,
+  Home,
+  LayoutDashboard,
+  Package,
+  Users,
+  ShoppingCart,
+  MessagesSquare,
+  BookOpen,
+  ClipboardList,
+} from "lucide-react";
 
 const sections = [
-  { to: "/admin", label: "Dashboard", end: true },
-  { to: "/admin/catalog", label: "Catálogo", end: false },
-  { to: "/admin/customers", label: "Clientes", end: false },
-  { to: "/admin/purchases", label: "Compras", end: false },
-  { to: "/admin/conversations", label: "Conversaciones", end: false },
-  { to: "/admin/recommendations", label: "Recomendaciones", end: false },
+  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/admin/catalog", label: "Catálogo", icon: Package, end: false },
+  { to: "/admin/customers", label: "Clientes", icon: Users, end: false },
+  { to: "/admin/purchases", label: "Compras", icon: ShoppingCart, end: false },
+  { to: "/admin/conversations", label: "Conversaciones", icon: MessagesSquare, end: false },
+  { to: "/admin/guidance", label: "Guías", icon: BookOpen, end: false },
+  { to: "/admin/recommendations", label: "Recomendaciones", icon: ClipboardList, end: false },
 ];
 
 export function AdminLayout() {
@@ -33,6 +44,7 @@ export function AdminLayout() {
                 }`
               }
             >
+              <s.icon className="w-4 h-4" />
               {s.label}
             </NavLink>
           ))}
