@@ -9,11 +9,11 @@
 | Chained PRs recommended | Yes |
 | Suggested split | PR1 backend foundation → PR2 agent+routes → PR3 frontend chat → PR4 CRM → PR5 tests |
 | Delivery strategy | ask-on-risk |
-| Chain strategy | pending |
+| Chain strategy | stacked-to-main |
 
 Decision needed before apply: Yes
 Chained PRs recommended: Yes
-Chain strategy: pending
+Chain strategy: stacked-to-main
 400-line budget risk: High
 
 ### Suggested Work Units
@@ -28,12 +28,12 @@ Chain strategy: pending
 
 ## Phase 1: Backend Foundation
 
-- [ ] 1.1 Create `backend/package.json` (deps: hono, drizzle-orm, better-sqlite3; dev: vitest, tsx)
-- [ ] 1.2 Create `backend/src/db/schema.ts` (customers, products, purchases, conversations, messages, recommendations; append-only log)
-- [ ] 1.3 Create `backend/src/db/client.ts` (SQLite driver + NODE_ENV guard) and `db/migrate.ts`
-- [ ] 1.4 Create `backend/src/config/consent.ts` (`CURRENT_CONSENT_VERSION` + exact consent text)
-- [ ] 1.5 Create `backend/src/services/catalogService.ts` (`lookup(reference)` → not-found; valid refs only, never invent)
-- [ ] 1.6 Create `backend/src/seed/curate-pdfs.ts` → `seedProducts.ts` (idempotent upsert on reference; flag incomplete rows) + `seedPurchases.ts`
+- [x] 1.1 Create `backend/package.json` (deps: hono, drizzle-orm, better-sqlite3; dev: vitest, tsx)
+- [x] 1.2 Create `backend/src/db/schema.ts` (customers, products, purchases, conversations, messages, recommendations; append-only log)
+- [x] 1.3 Create `backend/src/db/client.ts` (SQLite driver + NODE_ENV guard) and `db/migrate.ts`
+- [x] 1.4 Create `backend/src/config/consent.ts` (`CURRENT_CONSENT_VERSION` + exact consent text)
+- [x] 1.5 Create `backend/src/services/catalogService.ts` (`lookup(reference)` → not-found; valid refs only, never invent)
+- [x] 1.6 Create `backend/src/seed/curate-pdfs.ts` → `seedProducts.ts` (idempotent upsert on reference; flag incomplete rows) + `seedPurchases.ts`
 
 ## Phase 2: Agent Core
 
