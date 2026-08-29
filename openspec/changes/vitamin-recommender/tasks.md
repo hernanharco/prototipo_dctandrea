@@ -62,8 +62,8 @@ Chain strategy: stacked-to-main
 
 ## Phase 6: Testing + Build
 
-- [ ] 6.1 `backend/test/guard.test.ts` (diagnostic phrases blocked, prevention kept, disclaimer appended)
-- [ ] 6.2 `backend/test/gemini-retry.test.ts` (mock 429/503 → backoff → success/fallback)
+- [x] 6.1 `backend/test/guard.test.ts` (diagnostic phrases blocked, prevention kept, disclaimer appended)
+- [x] 6.2 `backend/test/gemini-retry.test.ts` (mock 429/503 → backoff → success/fallback)
 - [ ] 6.3 `backend/test/catalog.test.ts` (valid ref → data; absent ref → not-found, no invention)
 - [ ] 6.4 `backend/test/integration register+ask` (in-memory SQLite: register, consent downgrade → re-consent, purchase injection, history continuity, append-only DELETE rejected)
 - [ ] 6.5 Verify `pnpm --dir frontend build` passes
