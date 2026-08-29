@@ -37,18 +37,18 @@ Chain strategy: stacked-to-main
 
 ## Phase 2: Agent Core
 
-- [ ] 2.1 Create `backend/src/agent/prompt.ts` (system prompt, hard limit, disclaimer, injected catalog refs)
-- [ ] 2.2 Create `backend/src/agent/gemini.ts` (REST v1beta; retry 429/503 2s/5s/10s; graceful no-key fallback)
-- [ ] 2.3 Create `backend/src/agent/guard.ts` (deterministic diagnostic/cure patterns; block/rewrite + deferral; `guard_blocked`)
-- [ ] 2.4 Create `backend/src/services/recommendationService.ts` (append-only; no UPDATE/DELETE exposed)
-- [ ] 2.5 Create `backend/src/services/conversationService.ts` (load/save messages; conversationService.load)
+- [x] 2.1 Create `backend/src/agent/prompt.ts` (system prompt, hard limit, disclaimer, injected catalog refs)
+- [x] 2.2 Create `backend/src/agent/gemini.ts` (REST v1beta; retry 429/503 2s/5s/10s; graceful no-key fallback)
+- [x] 2.3 Create `backend/src/agent/guard.ts` (deterministic diagnostic/cure patterns; block/rewrite + deferral; `guard_blocked`)
+- [x] 2.4 Create `backend/src/services/recommendationService.ts` (append-only; no UPDATE/DELETE exposed)
+- [x] 2.5 Create `backend/src/services/conversationService.ts` (load/save messages; conversationService.load)
 
 ## Phase 3: API Routes + Registration/Consent
 
-- [ ] 3.1 Create `backend/src/routes/register.ts` (`POST /assistant/register` → 200 {customer_id}; 400 dup; 409 email/phone taken)
-- [ ] 3.2 Create `backend/src/routes/assistant.ts` (`GET /assistant/consent`; `POST /assistant/ask` → 401 CONSENT_REQUIRED on stale version; `GET /assistant/history`)
-- [ ] 3.3 Create `backend/src/routes/admin.ts` (dev-only; 403 outside `NODE_ENV=development`; recommendations GET-only)
-- [ ] 3.4 Create `backend/src/index.ts` (Hono bootstrap, CORS localhost, `x-api-key` header, env guard)
+- [x] 3.1 Create `backend/src/routes/register.ts` (`POST /assistant/register` → 200 {customer_id}; 400 dup; 409 email/phone taken)
+- [x] 3.2 Create `backend/src/routes/assistant.ts` (`GET /assistant/consent`; `POST /assistant/ask` → 401 CONSENT_REQUIRED on stale version; `GET /assistant/history`)
+- [x] 3.3 Create `backend/src/routes/admin.ts` (dev-only; 403 outside `NODE_ENV=development`; recommendations GET-only)
+- [x] 3.4 Create `backend/src/index.ts` (Hono bootstrap, CORS localhost, `x-api-key` header, env guard)
 
 ## Phase 4: Frontend Chat (end-to-end slice)
 
