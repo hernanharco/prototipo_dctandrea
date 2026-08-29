@@ -1,0 +1,32 @@
+# ============================================================
+# compose.prod.yaml — doctoraandrea (producción en Hetzner)
+# ============================================================
+# Uso (en el servidor, dentro de /opt/doctoraandrea):
+#   docker compose -f compose.prod.yaml up -d --build
+# El backend expone 8091 y Vercel lo alcanza server-to-server vía rewrites
+# (/api/* → http://100.111.99.61:8091). La BD SQLite persiste en ./data.
+# ============================================================
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 8091
+    ports:
+      - "8091:8091"
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8091/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 60s
+      timeout: 10s
+      retries: 3

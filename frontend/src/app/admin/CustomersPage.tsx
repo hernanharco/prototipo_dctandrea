@@ -41,6 +41,7 @@ export function CustomersPage() {
               <th className="px-4 py-3 text-left">Nombre</th>
               <th className="px-4 py-3 text-left">Email</th>
               <th className="px-4 py-3 text-left">Teléfono</th>
+              <th className="px-4 py-3 text-left">Referido por</th>
               <th className="px-4 py-3 text-right">Consent v</th>
               <th className="px-4 py-3 text-right">Registrado</th>
             </tr>
@@ -52,6 +53,7 @@ export function CustomersPage() {
                 <td className="px-4 py-3">{c.name}</td>
                 <td className="px-4 py-3">{c.email}</td>
                 <td className="px-4 py-3">{c.phone}</td>
+                <td className="px-4 py-3">{c.referrerPhone ?? "—"}</td>
                 <td className="px-4 py-3 text-right">{c.consentVersion}</td>
                 <td className="px-4 py-3 text-right text-xs text-stone-500">
                   {new Date(c.registeredAt).toLocaleString()}

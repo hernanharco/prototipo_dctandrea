@@ -60,9 +60,12 @@ describe("guidanceService", () => {
     expect(row.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
-  it("update patches fields and refreshes updatedAt", () => {
+  it("update patches fields and refreshes updatedAt", async () => {
     const svc = createGuidanceService(db);
     const row = svc.create({ title: "Original", content: "c", productReferences: "[]" });
+    // Ensure the timestamp advances (ISO has ms precision; updates in the same
+    // millisecond would otherwise produce an identical updatedAt).
+    await new Promise((r) => setTimeout(r, 5));
     const patched = svc.update(row.id, {
       title: "Nuevo título",
       productReferences: '["100930"]',

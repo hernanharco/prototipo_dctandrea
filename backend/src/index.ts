@@ -69,14 +69,14 @@ export function buildApp(db: Db): Hono {
 }
 
 /**
- * Starts the HTTP server. Migrates the dev DB at boot. This is a dev/local
- * prototype with no real auth — basic auth is a documented MUST before any
- * public deploy (see design Risks + customer-crm spec).
+ * Starts the HTTP server. Migrates the dev DB at boot.
+ *
+ * The chat API is intentionally public (served through the Vercel rewrite);
+ * the /admin CRM is the protected surface — basic auth in production
+ * (ADMIN_USER/ADMIN_PASS, fail-closed), open in development.
+ * API_KEY is optional: when configured, the x-api-key header is enforced.
  */
 export async function startServer(): Promise<{ server: ServerType; db: Db }> {
-  if (process.env.NODE_ENV === "production" && !API_KEY) {
-    throw new Error("API_KEY es obligatoria en producción (x-api-key bridge guard).");
-  }
   const db = createDatabase(DB_PATH);
   await migrate(db);
   const app = buildApp(db);

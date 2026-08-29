@@ -97,9 +97,46 @@ export class AdminError extends Error {
   }
 }
 
+// Basic-auth session for the /admin CRM in non-dev environments.
+// In development the backend is open; in production the browser stores the
+// credentials (sessionStorage only — never persisted) and sends them on every
+// admin request.
+let adminAuth: string | null = (() => {
+  try {
+    return sessionStorage.getItem("vr_admin_auth");
+  } catch {
+    return null;
+  }
+})();
+
+export function setAdminAuth(user: string, pass: string): void {
+  adminAuth = btoa(`${user}:${pass}`);
+  try {
+    sessionStorage.setItem("vr_admin_auth", adminAuth);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export function clearAdminAuth(): void {
+  adminAuth = null;
+  try {
+    sessionStorage.removeItem("vr_admin_auth");
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export function hasAdminAuth(): boolean {
+  return adminAuth !== null;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api/admin${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(adminAuth ? { Authorization: `Basic ${adminAuth}` } : {}),
+    },
     ...init,
   });
   const body = (await res.json().catch(() => ({}))) as { error?: string };
