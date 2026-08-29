@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { products } from "../db/schema.js";
-import type { Product } from "../db/schema.js";
+import type { Product, NewProduct } from "../db/schema.js";
 
 /**
  * Result of a product lookup. Distinguishes a present product from an absent
@@ -16,6 +16,10 @@ export interface CatalogService {
   lookup(reference: string): CatalogLookupResult;
   /** List all catalog products (used by seed validation / CRM). */
   listAll(): Product[];
+  /** Create a product. Throws on a duplicate `reference` (handled by the route). */
+  create(input: NewProduct): Product;
+  /** Update a product by reference; returns the row or null when not found. */
+  update(reference: string, input: Partial<NewProduct>): Product | null;
 }
 
 /**
@@ -40,6 +44,20 @@ export function createCatalogService(db: Db): CatalogService {
 
     listAll(): Product[] {
       return db.select().from(products).all();
+    },
+
+    create(input: NewProduct): Product {
+      return db.insert(products).values(input).returning().get();
+    },
+
+    update(reference: string, input: Partial<NewProduct>): Product | null {
+      const row = db
+        .update(products)
+        .set(input)
+        .where(eq(products.reference, reference))
+        .returning()
+        .get();
+      return row ?? null;
     },
   };
 }
