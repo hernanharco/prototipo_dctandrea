@@ -184,8 +184,14 @@ export function ChatWidget() {
         const data = (await res.json()) as { customer_id: number };
         window.localStorage.setItem("vr_consent_version", String(consent.version));
         consentedVersion.current = consent.version;
-        persistIdentity(data.customer_id, null);
-        setMessages([{ sender: "agent", text: "¡Hola! ¿En qué te puedo ayudar hoy con tu bienestar?" }]);
+        // Upsert re-consents an existing customer in place (same id). On
+        // re-entry after 401, preserve their conversation; a fresh registration
+        // starts a new conversation.
+        const keepConv = consentReentry && conversationId != null ? conversationId : null;
+        persistIdentity(data.customer_id, keepConv);
+        if (keepConv == null) {
+          setMessages([{ sender: "agent", text: "¡Hola! ¿En qué te puedo ayudar hoy con tu bienestar?" }]);
+        }
         setChatError(null);
         setPhase("chat");
       } else if (res.status === 409) {
