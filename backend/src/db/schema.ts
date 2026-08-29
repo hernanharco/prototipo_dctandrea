@@ -1,0 +1,139 @@
+import { sqliteTable, text, integer, real, index, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+
+/**
+ * Portable Drizzle schema (SQLite dialect). The relational model maps 1:1 to
+ * Postgres (drizzle-orm/pg-core) if the backend migrates off SQLite; column
+ * names and keys are kept dialect-neutral so only the table builders change.
+ *
+ * Append-only: `recommendations` is an audit log. No UPDATE/DELETE is exposed
+ * by the service or API layers (see recommendationService + admin routes).
+ */
+
+/** Versioned informed-consent metadata lives on the customer row. */
+export const customers = sqliteTable(
+  "customers",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone").notNull(),
+    referrerPhone: text("referrer_phone"),
+    consentVersion: integer("consent_version").notNull(),
+    consentTimestamp: text("consent_timestamp").notNull(),
+    registeredAt: text("registered_at").notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => [
+    uniqueIndex("customers_email_unique").on(t.email),
+    uniqueIndex("customers_phone_unique").on(t.phone),
+    index("customers_referrer_phone_idx").on(t.referrerPhone),
+  ],
+);
+
+/** Structured Nutrilite catalog — single source of truth for product data. */
+export const products = sqliteTable(
+  "products",
+  {
+    reference: text("reference").primaryKey(),
+    name: text("name").notNull(),
+    category: text("category").notNull(),
+    size: text("size").notNull(),
+    price: real("price").notNull(),
+    benefits: text("benefits").notNull(),
+    dosage: text("dosage").notNull(),
+    ingredients: text("ingredients").notNull(),
+    disclaimer: text("disclaimer").notNull(),
+  },
+  (t) => [index("products_category_idx").on(t.category)],
+);
+
+/** Purchase history, injected server-side into the agent context. */
+export const purchases = sqliteTable(
+  "purchases",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    customerId: integer("customer_id")
+      .notNull()
+      .references(() => customers.id),
+    productReference: text("product_reference")
+      .notNull()
+      .references(() => products.reference),
+    qty: integer("qty").notNull().default(1),
+    purchasedAt: text("purchased_at").notNull(),
+  },
+  (t) => [index("purchases_customer_id_idx").on(t.customerId)],
+);
+
+export const conversations = sqliteTable(
+  "conversations",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    customerId: integer("customer_id")
+      .notNull()
+      .references(() => customers.id),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => [index("conversations_customer_id_idx").on(t.customerId)],
+);
+
+export const messages = sqliteTable(
+  "messages",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    conversationId: integer("conversation_id")
+      .notNull()
+      .references(() => conversations.id),
+    role: text("role").notNull(), // 'user' | 'assistant'
+    content: text("content").notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => [index("messages_conversation_id_idx").on(t.conversationId)],
+);
+
+/**
+ * Append-only recommendation audit log. Each entry records timestamp,
+ * referenced products, the rationale that produced it, the consent version at
+ * the time, and whether the deterministic guard blocked/rewrote the reply.
+ */
+export const recommendations = sqliteTable(
+  "recommendations",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    conversationId: integer("conversation_id")
+      .notNull()
+      .references(() => conversations.id),
+    customerId: integer("customer_id")
+      .notNull()
+      .references(() => customers.id),
+    symptom: text("symptom").notNull(),
+    productReferences: text("product_references").notNull(), // JSON array of valid refs
+    rationale: text("rationale").notNull(),
+    consentVersion: integer("consent_version").notNull(),
+    guardBlocked: integer("guard_blocked", { mode: "boolean" }).notNull().default(false),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => [
+    index("recommendations_customer_id_idx").on(t.customerId),
+    index("recommendations_created_at_idx").on(t.createdAt),
+  ],
+);
+
+export type Customer = typeof customers.$inferSelect;
+export type NewCustomer = typeof customers.$inferInsert;
+export type Product = typeof products.$inferSelect;
+export type NewProduct = typeof products.$inferInsert;
+export type Purchase = typeof purchases.$inferSelect;
+export type NewPurchase = typeof purchases.$inferInsert;
+export type Conversation = typeof conversations.$inferSelect;
+export type Message = typeof messages.$inferSelect;
+export type Recommendation = typeof recommendations.$inferSelect;
+export type NewRecommendation = typeof recommendations.$inferInsert;
