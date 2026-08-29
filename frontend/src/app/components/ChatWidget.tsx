@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { MessageCircle, X, Send, User, AlertCircle, CheckCircle2 } from "lucide-react";
+import { COUNTRY_CODES, DEFAULT_COUNTRY_CODE, formatPhone } from "../lib/countryCodes";
 
 /**
  * Preventive vitamin recommender — real client.
@@ -59,7 +60,9 @@ export function ChatWidget() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [phoneCode, setPhoneCode] = useState(DEFAULT_COUNTRY_CODE);
   const [referrerPhone, setReferrerPhone] = useState("");
+  const [referrerCode, setReferrerCode] = useState(DEFAULT_COUNTRY_CODE);
   const [agreed, setAgreed] = useState(false);
 
   // Session identity (persisted so returning users resume their conversation).
@@ -174,8 +177,8 @@ export function ChatWidget() {
         body: JSON.stringify({
           name: name.trim(),
           email: email.trim(),
-          phone: phone.trim(),
-          referrer_phone: referrerPhone.trim() ? referrerPhone.trim() : null,
+          phone: formatPhone(phoneCode, phone),
+          referrer_phone: referrerPhone.trim() ? formatPhone(referrerCode, referrerPhone) : null,
           consent_version: consent.version,
         }),
       });
@@ -288,6 +291,9 @@ export function ChatWidget() {
   const inputCls =
     "w-full px-3 py-2 bg-stone-100 border border-stone-200 rounded-lg text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-1 focus:ring-emerald-900 transition-shadow";
 
+  const codeSelectCls =
+    "w-[112px] shrink-0 px-2 py-2 bg-stone-100 border border-stone-200 rounded-lg text-sm text-stone-800 focus:outline-none focus:ring-1 focus:ring-emerald-900 transition-shadow";
+
   return (
     <div className="fixed bottom-6 right-6 z-50">
       <AnimatePresence>
@@ -362,23 +368,51 @@ export function ChatWidget() {
                     </label>
                     <label className="text-xs text-stone-600">
                       Teléfono
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className={inputCls}
-                        placeholder="Teléfono de contacto"
-                      />
+                      <div className="flex gap-2">
+                        <select
+                          value={phoneCode}
+                          onChange={(e) => setPhoneCode(e.target.value)}
+                          className={codeSelectCls}
+                          aria-label="Indicativo del país"
+                        >
+                          {COUNTRY_CODES.map((c) => (
+                            <option key={`${c.code}-${c.name}`} value={c.code}>
+                              {c.code} {c.name}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className={inputCls}
+                          placeholder="Número de contacto"
+                        />
+                      </div>
                     </label>
                     <label className="text-xs text-stone-600">
                       Teléfono de referido (opcional)
-                      <input
-                        type="tel"
-                        value={referrerPhone}
-                        onChange={(e) => setReferrerPhone(e.target.value)}
-                        className={inputCls}
-                        placeholder="Quién te recomendó"
-                      />
+                      <div className="flex gap-2">
+                        <select
+                          value={referrerCode}
+                          onChange={(e) => setReferrerCode(e.target.value)}
+                          className={codeSelectCls}
+                          aria-label="Indicativo del país del referido"
+                        >
+                          {COUNTRY_CODES.map((c) => (
+                            <option key={`${c.code}-${c.name}`} value={c.code}>
+                              {c.code} {c.name}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="tel"
+                          value={referrerPhone}
+                          onChange={(e) => setReferrerPhone(e.target.value)}
+                          className={inputCls}
+                          placeholder="Quién te recomendó"
+                        />
+                      </div>
                     </label>
 
                     <label className="flex items-start gap-2 text-xs text-stone-600 cursor-pointer">
