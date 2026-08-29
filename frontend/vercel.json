@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "http://100.111.99.61:8091/:path*"
+      "destination": "https://api.draandrea.rincom.es/:path*"
     },
     {
       "source": "/(.*)",

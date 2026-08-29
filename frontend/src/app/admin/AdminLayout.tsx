@@ -92,15 +92,15 @@ export function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-900 font-sans flex">
-      {/* Sidebar */}
+    <div className="h-screen bg-stone-50 text-stone-900 font-sans flex overflow-hidden">
+      {/* Sidebar — fixed viewport height; nav scrolls internally if needed */}
       <aside
         className={`shrink-0 bg-emerald-950 text-stone-100 flex flex-col transition-all duration-200 ${
           collapsed ? "w-16" : "w-64"
         }`}
       >
         <div
-          className={`flex items-center gap-2 py-6 ${collapsed ? "justify-center px-0" : "px-6"}`}
+          className={`flex items-center gap-2 py-5 ${collapsed ? "justify-center px-0" : "px-6"}`}
         >
           <Leaf className="w-6 h-6 shrink-0" />
           {!collapsed && (
@@ -109,7 +109,7 @@ export function AdminLayout() {
             </span>
           )}
         </div>
-        <nav className="flex-1 px-3 space-y-1">
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
           {sections.map((s) => (
             <NavLink
               key={s.to}
@@ -131,7 +131,7 @@ export function AdminLayout() {
             </NavLink>
           ))}
         </nav>
-        <div className="border-t border-emerald-900/60 py-3">
+        <div className="border-t border-emerald-900/60 py-3 shrink-0">
           {!collapsed && (
             <p className="px-4 pb-2 text-[11px] text-stone-500">
               {authState === "ok"
@@ -158,7 +158,7 @@ export function AdminLayout() {
         </div>
       </aside>
 
-      {/* Content */}
+      {/* Content — the only area that scrolls */}
       <main className="flex-1 overflow-y-auto">
         <div className="flex items-center justify-between px-8 py-4 bg-white border-b border-stone-200">
           <Link

@@ -18,7 +18,7 @@ services:
       NODE_ENV: production
       PORT: 8091
     ports:
-      - "8091:8091"
+      - "127.0.0.1:8091:8091"
     volumes:
       - ./data:/app/data
     healthcheck:
