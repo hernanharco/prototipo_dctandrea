@@ -1,0 +1,30 @@
+{
+  "name": "@doctoraandrea/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Nutrilite vitamin recommender backend (Hono + Drizzle + SQLite)",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "migrate": "tsx src/db/migrate.ts",
+    "seed:products": "tsx src/seed/seedProducts.ts",
+    "seed:purchases": "tsx src/seed/seedPurchases.ts",
+    "seed:curate": "tsx src/seed/curate-pdfs.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "drizzle-orm": "^0.38.3",
+    "hono": "^4.6.14"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,0 +1,31 @@
+schema: spec-driven
+
+context: |
+  Tech stack: monorepo — frontend/ (React 18.3 + TypeScript + Vite 6 + Tailwind 4, export de Figma Make) + backend/ (placeholder, stack sin definir).
+  Architecture: landing page de doctora (Medicina Funcional & Hábitos) + recomendador de vitaminas Nutrilite con agente LLM con memoria, capa legal y CRM futuro.
+  Testing: sin runner configurado (no vitest/jest/playwright); strict_tdd: false por ahora.
+  Style: Vite/React, alias '@' -> src, MUI + Radix + Tailwind; conversación y artefactos en inglés por defecto.
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    guidelines:
+      - Follow existing code patterns
+    tdd: false           # Sin runner de tests configurado; habilitar RED-GREEN-REFACTOR cuando se agregue vitest/jest
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: "pnpm --dir frontend build"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
